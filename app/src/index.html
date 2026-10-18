@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#04080d" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Sonakshi" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/icon-192.png" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <title>Sonakshi</title>
+  <script>
+    /* apply the saved theme before first paint to avoid a flash */
+    try {
+      var t = localStorage.getItem("sonakshi.theme") || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-state="sleep" class="h-[100dvh] w-screen select-none overflow-hidden bg-void text-haze">
+  <canvas id="gl" class="fixed inset-0 h-full w-full"></canvas>
+
+  <!-- Header -->
+  <header class="fixed inset-x-0 top-0 z-10 flex items-center gap-3 px-4 pt-[max(1.25rem,env(safe-area-inset-top))]">
+    <span class="avatar avatar-ring h-11 w-11 shrink-0"><img src="assets/avatar-sm.jpg" alt="" width="44" height="44" /></span>
+    <div class="min-w-0 flex-1 leading-tight">
+      <h1 class="text-xl tracking-[0.35em] text-arc">SONAKSHI</h1>
+      <p id="status" class="text-sm text-haze/70" aria-live="polite">standing by</p>
+    </div>
+    <button id="theme-toggle" class="icon-btn" type="button" aria-label="Switch to light theme">
+      <svg class="ico-sun h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="ico-moon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+    </button>
+    <button id="open-feed" class="icon-btn" type="button" aria-label="Open updates feed" aria-controls="drawer" aria-expanded="false">
+      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
+      <span class="unread-badge" hidden></span>
+    </button>
+  </header>
+
+  <!-- Conversation -->
+  <main id="main" class="fixed inset-x-0 bottom-0 z-10 px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+    <div class="flex items-start gap-3">
+      <span class="avatar avatar-ring mt-0.5 h-10 w-10 shrink-0"><img src="assets/avatar-sm.jpg" alt="Sonakshi" width="40" height="40" /></span>
+      <div class="min-w-0">
+        <p id="you" class="min-h-[1.5rem] text-base text-haze/60"></p>
+        <p id="reply" class="mt-1 min-h-[4.5rem] max-w-prose text-lg leading-snug text-ink/90"></p>
+      </div>
+    </div>
+    <!-- typed input: shown only in the browser build (the Android app is voice-first) -->
+    <form id="ask-form" class="mt-3 hidden max-w-prose gap-2" autocomplete="off">
+      <input id="ask-input" type="text" maxlength="500" placeholder="Ask Sonakshi" aria-label="Ask Sonakshi"
+        class="min-w-0 flex-1 select-text rounded-full border border-arc/30 bg-void/60 px-4 py-2.5 text-base text-ink placeholder:text-haze/50" />
+      <button type="submit" class="rounded-full bg-arc px-5 py-2.5 text-base font-semibold text-void">Send</button>
+    </form>
+  </main>
+
+  <!-- Floating assistant widget -->
+  <button id="fab" class="fab" type="button" aria-label="Open updates feed" aria-controls="drawer">
+    <span class="avatar avatar-ring block h-full w-full"><img src="assets/avatar-sm.jpg" alt="" width="60" height="60" /></span>
+    <span class="unread-badge" hidden></span>
+  </button>
+
+  <!-- Feed drawer -->
+  <div id="scrim" class="scrim" data-open="false"></div>
+  <aside id="drawer" class="drawer select-text" data-open="false" role="dialog" aria-modal="true" aria-labelledby="drawer-title" inert>
+    <div class="flex items-center gap-3 px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
+      <span class="avatar avatar-ring h-12 w-12 shrink-0"><img src="assets/avatar.jpg" alt="" width="48" height="48" /></span>
+      <div class="min-w-0 flex-1">
+        <h2 id="drawer-title" class="truncate text-lg font-semibold text-ink">Sonakshi Updates &amp; Feed</h2>
+        <p id="drawer-sub" class="text-sm text-haze/80">Nothing yet</p>
+      </div>
+      <button id="drawer-close" class="icon-btn" type="button" aria-label="Close feed">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="mx-4 mb-3 flex items-center gap-3 rounded-2xl bg-ink/[0.05] px-4 py-3">
+      <div class="min-w-0 flex-1">
+        <p id="notif-label" class="text-sm font-semibold text-ink">Notifications</p>
+        <p id="notif-hint" class="text-xs leading-snug text-haze/80"></p>
+      </div>
+      <button id="test-btn" class="chip-btn" type="button" hidden>Send test</button>
+      <button id="notif-switch" class="switch" type="button" role="switch" aria-checked="false" aria-labelledby="notif-label"><span class="knob"></span></button>
+    </div>
+
+    <div id="filters" class="flex flex-wrap gap-2 px-4 pb-2" role="group" aria-label="Filter updates">
+      <button class="filter-chip" type="button" data-filter="all" aria-pressed="true">All</button>
+      <button class="filter-chip" type="button" data-filter="verse" aria-pressed="false">Bible verse</button>
+      <button class="filter-chip" type="button" data-filter="news" aria-pressed="false">News</button>
+      <button class="filter-chip" type="button" data-filter="alerts" aria-pressed="false">Alerts</button>
+    </div>
+
+    <div id="feed-list" class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4" aria-live="polite"></div>
+
+    <div class="flex items-center gap-3 border-t border-haze/15 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 text-xs text-haze/80">
+      <span id="conn-dot" class="h-2 w-2 shrink-0 rounded-full bg-haze/50"></span>
+      <span id="conn-text" class="min-w-0 flex-1 truncate">Connecting…</span>
+      <button id="clear-btn" class="chip-btn" type="button">Clear feed</button>
+    </div>
+  </aside>
+
+  <!-- First-run notification prompt -->
+  <dialog id="notif-modal" class="modal" aria-labelledby="notif-title">
+    <div class="flex items-center gap-3">
+      <span class="avatar avatar-ring h-14 w-14 shrink-0"><img src="assets/avatar-sm.jpg" alt="" width="56" height="56" /></span>
+      <h2 id="notif-title" class="text-lg font-semibold leading-snug">Enable Sonakshi Notifications</h2>
+    </div>
+    <p class="mt-4 text-sm leading-relaxed text-ink/80">Get your morning briefing, the daily Bible verse and assistant alerts as notifications, the moment Sonakshi sends them.</p>
+    <div class="mt-6 flex gap-3">
+      <button id="notif-yes" class="flex-1 rounded-full bg-arc px-4 py-2.5 text-base font-semibold text-void" type="button">Turn on notifications</button>
+      <button id="notif-no" class="rounded-full border border-haze/30 px-4 py-2.5 text-base text-haze" type="button">Not now</button>
+    </div>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

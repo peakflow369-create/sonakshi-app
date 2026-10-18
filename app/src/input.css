@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme tokens (space-separated RGB so Tailwind's /opacity works) ── */
+:root {
+  --void: 4 8 13;  --panel: 10 18 27;  --ink: 255 255 255;  --haze: 159 183 196;
+  --arc: 70 227 255;  --ember: 255 174 66;  --bloom: 255 143 190;
+  color-scheme: dark;
+}
+html[data-theme="light"] {
+  --void: 238 243 246;  --panel: 255 255 255;  --ink: 11 26 34;  --haze: 61 85 99;
+  --arc: 8 138 166;  --ember: 190 100 12;  --bloom: 190 48 106;
+  color-scheme: light;
+}
+
+html, body { background: rgb(var(--void)); overscroll-behavior: none; }
+body {
+  font-family: "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .3s ease, color .3s ease;
+}
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid rgb(var(--arc)); outline-offset: 2px; }
+
+@layer components {
+  /* Avatar + a ring that follows the assistant's state */
+  .avatar { @apply relative inline-block overflow-hidden rounded-full; }
+  .avatar img { @apply h-full w-full object-cover; object-position: 50% 30%; }
+  .avatar-ring {
+    box-shadow: 0 0 0 2px rgb(var(--ring, var(--arc)) / .9), 0 0 16px rgb(var(--ring, var(--arc)) / .3);
+    transition: box-shadow .3s ease;
+  }
+  body[data-state="thinking"] .avatar-ring { --ring: var(--ember); }
+  body[data-state="speaking"] .avatar-ring { --ring: var(--bloom); }
+
+  .icon-btn { @apply relative grid h-10 w-10 shrink-0 place-items-center rounded-full text-haze transition-colors hover:bg-arc/10 hover:text-arc; }
+  html[data-theme="dark"] .ico-moon, html[data-theme="light"] .ico-sun { display: none; }
+
+  .unread-badge {
+    @apply absolute -right-0.5 -top-0.5 grid h-[1.1rem] min-w-[1.1rem] place-items-center rounded-full bg-ember px-1 text-[0.65rem] font-bold leading-none text-void;
+  }
+
+  /* Floating assistant widget: hovers above the reply text */
+  .fab {
+    position: fixed; right: 1.25rem; z-index: 20; height: 3.75rem; width: 3.75rem; border-radius: 9999px;
+    bottom: calc(var(--main-h, 7rem) + .75rem);
+    transition: bottom .2s ease, transform .15s ease;
+  }
+  .fab:active { transform: scale(.94); }
+  .fab.pulse { animation: fab-pulse 1.1s ease-out 1; }
+  @keyframes fab-pulse { from { box-shadow: 0 0 0 0 rgb(var(--ember) / .7); } to { box-shadow: 0 0 0 18px rgb(var(--ember) / 0); } }
+
+  /* Side drawer */
+  .scrim {
+    position: fixed; inset: 0; z-index: 40; background: rgb(var(--void) / .6);
+    opacity: 0; visibility: hidden; transition: opacity .28s ease, visibility 0s linear .28s;
+  }
+  .scrim[data-open="true"] { opacity: 1; visibility: visible; transition: opacity .28s ease; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 50; display: flex; flex-direction: column;
+    width: min(26rem, 100vw); background: rgb(var(--panel) / .97);
+    border-left: 1px solid rgb(var(--arc) / .22);
+    transform: translateX(104%); visibility: hidden;
+    transition: transform .32s cubic-bezier(.22, .8, .24, 1), visibility 0s linear .32s;
+  }
+  .drawer[data-open="true"] { transform: none; visibility: visible; transition: transform .32s cubic-bezier(.22, .8, .24, 1); }
+
+  .filter-chip { @apply rounded-full border border-haze/25 px-3 py-1.5 text-sm text-haze transition-colors; }
+  .filter-chip[aria-pressed="true"] { @apply border-arc/60 bg-arc/15 text-arc; }
+
+  .chip-btn { @apply inline-flex items-center gap-1.5 rounded-full border border-haze/25 px-3 py-2 text-xs text-haze transition-colors hover:border-arc/60 hover:text-arc disabled:opacity-60; }
+
+  .switch { @apply relative h-7 w-12 shrink-0 rounded-full bg-haze/30 transition-colors disabled:opacity-40; }
+  .switch[aria-checked="true"] { @apply bg-arc; }
+  .switch .knob { @apply absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform; }
+  .switch[aria-checked="true"] .knob { transform: translateX(1.25rem); }
+
+  .new-dot { @apply inline-block h-2 w-2 rounded-full bg-ember; }
+
+  dialog.modal { @apply m-auto w-[min(92vw,24rem)] rounded-3xl border border-arc/25 bg-panel p-6 text-ink; }
+  dialog.modal::backdrop { background: rgb(0 0 0 / .55); }
+  dialog.modal[open] { animation: modal-in .22s ease-out; }
+  @keyframes modal-in { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
